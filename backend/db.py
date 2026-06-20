@@ -128,7 +128,7 @@ def save_tv_news_items(items):
     conn.close()
     return saved_count
 
-def query_news(start_time=None, end_time=None, category=None, min_score=None, limit=100, offset=0):
+def query_news(start_time=None, end_time=None, category=None, min_score=None, limit=100, offset=0, source=None):
     conn = get_connection()
     cursor = conn.cursor()
     
@@ -147,6 +147,9 @@ def query_news(start_time=None, end_time=None, category=None, min_score=None, li
     if min_score is not None:
         sql += " AND importance_score >= ?"
         params.append(int(min_score))
+    if source:
+        sql += " AND source = ?"
+        params.append(source)
         
     sql += " ORDER BY pub_date DESC LIMIT ? OFFSET ?"
     params.extend([limit, offset])

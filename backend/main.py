@@ -806,27 +806,45 @@ class NewsAnalyzeRequest(BaseModel):
 
 @app.post("/api/news/cls/sync")
 async def sync_cls_news():
-    """同时抓取最新财联社电报与TradingView新闻快讯并存盘 (合并进程设计)"""
+    """同时抓取最新财联社电报、华尔街见闻、金十数据与TradingView新闻快讯并存盘 (合并进程设计)"""
     try:
-        from backend import cls_scraper, tv_scraper, db
+        from backend import cls_scraper, wscn_scraper, jin10_scraper, tv_scraper, db
         
-        # 1. 抓取与保存财联社电报 (最新30条)
-        cls_items = await cls_scraper.get_latest_news(30)
-        saved_cls = 0
-        if cls_items:
-            saved_cls = db.save_news_items(cls_items)
+        # Concurrently fetch CLS, WSCN, Jin10, and TradingView news
+        cls_task = cls_scraper.get_latest_news(30)
+        wscn_task = wscn_scraper.get_latest_news(30)
+        jin10_task = jin10_scraper.get_latest_news(30)
+        tv_task = tv_scraper.get_latest_news(30)
+        
+        results = await asyncio.gather(cls_task, wscn_task, jin10_task, tv_task, return_exceptions=True)
+        
+        cls_items, wscn_items, jin10_items, tv_items = results
+        
+        if isinstance(cls_items, Exception):
+            print(f"Error fetching CLS news: {cls_items}")
+            cls_items = []
+        if isinstance(wscn_items, Exception):
+            print(f"Error fetching WSCN news: {wscn_items}")
+            wscn_items = []
+        if isinstance(jin10_items, Exception):
+            print(f"Error fetching Jin10 news: {jin10_items}")
+            jin10_items = []
+        if isinstance(tv_items, Exception):
+            print(f"Error fetching TradingView news: {tv_items}")
+            tv_items = []
             
-        # 2. 抓取与保存TradingView新闻快讯 (最新30条，自动本地过滤并抓取正文)
-        tv_items = await tv_scraper.get_latest_news(30)
-        saved_tv = 0
-        if tv_items:
-            saved_tv = db.save_tv_news_items(tv_items)
-            
+        saved_cls = db.save_news_items(cls_items) if cls_items else 0
+        saved_wscn = db.save_news_items(wscn_items) if wscn_items else 0
+        saved_jin10 = db.save_news_items(jin10_items) if jin10_items else 0
+        saved_tv = db.save_tv_news_items(tv_items) if tv_items else 0
+        
         return {
             "status": "success", 
             "saved_count": saved_cls,
+            "saved_wscn_count": saved_wscn,
+            "saved_jin10_count": saved_jin10,
             "saved_tv_count": saved_tv,
-            "message": f"Synced {saved_cls} Cailianpress items and {saved_tv} TradingView items."
+            "message": f"Synced {saved_cls} CLS, {saved_wscn} WSCN, {saved_jin10} Jin10, and {saved_tv} TradingView items."
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to sync news: {str(e)}")
@@ -838,7 +856,8 @@ async def list_cls_news(
     category: Optional[str] = None,
     min_score: Optional[int] = None,
     limit: int = 100,
-    offset: int = 0
+    offset: int = 0,
+    source: Optional[str] = None
 ):
     """筛选时间范围内的已保存新闻列表"""
     try:
@@ -849,7 +868,8 @@ async def list_cls_news(
             category=category,
             min_score=min_score,
             limit=limit,
-            offset=offset
+            offset=offset,
+            source=source
         )
         return {"status": "success", "data": results}
     except Exception as e:

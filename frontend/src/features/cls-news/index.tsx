@@ -65,6 +65,7 @@ export function ClsNews() {
   const [customStart, setCustomStart] = useState('')
   const [customEnd, setCustomEnd] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL')
+  const [selectedSource, setSelectedSource] = useState<string>('ALL')
 
   // AI State
   const [aiLoading, setAiLoading] = useState(false)
@@ -114,6 +115,7 @@ export function ClsNews() {
     if (startStr) url += `&start_time=${encodeURIComponent(startStr)}`
     if (endStr) url += `&end_time=${encodeURIComponent(endStr)}`
     if (selectedCategory !== 'ALL') url += `&category=${encodeURIComponent(selectedCategory)}`
+    if (selectedSource !== 'ALL') url += `&source=${encodeURIComponent(selectedSource.toLowerCase())}`
 
     try {
       const res = await fetch(url)
@@ -205,7 +207,7 @@ export function ClsNews() {
         clearInterval(autoSyncIntervalRef.current)
       }
     }
-  }, [timeRange, customStart, customEnd, selectedCategory])
+  }, [timeRange, customStart, customEnd, selectedCategory, selectedSource])
 
   return (
     <>
@@ -342,6 +344,22 @@ export function ClsNews() {
               </select>
             </div>
 
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block">
+                数据源过滤
+              </label>
+              <select
+                value={selectedSource}
+                onChange={(e) => setSelectedSource(e.target.value)}
+                className="h-9 px-3 text-xs rounded-lg outline-none border border-slate-200 dark:border-slate-800 bg-transparent focus:border-indigo-500/50"
+              >
+                <option value="ALL">全部数据源</option>
+                <option value="CLS">财联社 (CLS)</option>
+                <option value="WSCN">华尔街见闻 (WSCN)</option>
+                <option value="JIN10">金十数据 (JIN10)</option>
+              </select>
+            </div>
+
             <Button
               variant="secondary"
               size="sm"
@@ -391,6 +409,21 @@ export function ClsNews() {
                           <span className="text-[10px] font-mono font-bold text-indigo-500 dark:text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded">
                             {item.pub_date.substring(11, 19)}
                           </span>
+                          {item.source.toLowerCase() === 'cls' && (
+                            <Badge className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-[9px] font-bold py-0 px-1.5">
+                              CLS
+                            </Badge>
+                          )}
+                          {item.source.toLowerCase() === 'wscn' && (
+                            <Badge className="bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20 text-[9px] font-bold py-0 px-1.5">
+                              WSCN
+                            </Badge>
+                          )}
+                          {item.source.toLowerCase() === 'jin10' && (
+                            <Badge className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[9px] font-bold py-0 px-1.5">
+                              Jin10
+                            </Badge>
+                          )}
                           {item.is_red && (
                             <Badge variant="destructive" className="text-[9px] font-black uppercase py-0.5 px-1.5 flex items-center gap-1 animate-pulse">
                               <Flame size={10} /> 核心重点
