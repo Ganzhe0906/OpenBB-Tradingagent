@@ -1,0 +1,18 @@
+{
+  "props": {
+    "pageProps": {
+      "initialState": {
+        "chooseNav": "telegraph"
+      }
+    },
+    "__N_SSP": true
+  },
+  "page": "/telegraph",
+  "query": {},
+  "buildId": "kZYUJaVE5XFkrioVeon5D",
+  "assetPrefix": "https://wwwjs.cls.cn",
+  "isFallback": false,
+  "isExperimentalCompile": false,
+  "gssp": true,
+  "scriptLoader": []
+}
